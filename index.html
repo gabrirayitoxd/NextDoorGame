@@ -77,7 +77,7 @@
   <section id="mainMenu" class="panel menu-screen">
     <div class="menu-door" aria-hidden="true">🚪</div>
     <h2 class="menu-title">NEXT DOOR</h2>
-    <p class="menu-subtitle">Cada puerta esconde un nuevo peligro. Busca las llaves, recoge monedas y no dejes que te atrapen.</p>
+    <p class="menu-subtitle">Cada etapa puede costarte desde monedas a la vida. Busca las llaves, recoge monedas y no dejes que te atrapen.</p>
     <div class="menu-actions">
       <button id="playMenuBtn" class="primary" type="button">JUGAR</button>
       <button id="skinsMenuBtn" type="button">SKINS</button>
@@ -87,7 +87,7 @@
   </section>
   <section id="skinsScreen" class="panel menu-page hidden">
     <h2>SKINS</h2>
-    <p class="menu-subtitle">Elige el aspecto de tu personaje. El monstruo conserva su color original y las skins no cambian la hitbox.</p>
+    <p class="menu-subtitle">Elige el aspecto de tu personaje. El monstruo/enemigo conserva su color original y las skins no cambian la hitbox.</p>
     <div class="skin-gallery" id="skinGallery" aria-label="Elige una skin"></div>
     <p id="skinNotice" class="skin-notice" role="status">Selecciona una skin para equiparla.</p>
     <button id="skinsBackBtn" class="primary wide" type="button">VOLVER AL MENÚ</button>
@@ -101,7 +101,7 @@
   <section id="creditsScreen" class="panel menu-page hidden">
     <h2>CRÉDITOS</h2>
     <div class="credits-note">Gracias a Scythe/EzversT por ser el primero en probar el juego :D</div>
-    <p class="menu-subtitle">NEXT DOOR · Un pequeño juego indie hecho con cariño.</p>
+    <p class="menu-subtitle">NEXT DOOR · Un pequeño juego indie :D.</p>
     <button id="creditsBackBtn" class="primary wide" type="button">VOLVER AL MENÚ</button>
   </section>
   <section id="authScreen" class="panel auth-layout hidden">
@@ -146,11 +146,11 @@
   document.querySelectorAll('audio').forEach(a=>{a.dataset.nextdoorDefaultVolume=a.id==='deathSound'?'0.8':'0.4';});
 
   const SKINS={
-    classic:{name:'Clásica',color:'#4aafff',accent:'#c7f4ff',dark:'#172f58',desc:'El aspecto original.'},
-    halloween:{name:'Halloween',color:'#ff8a24',accent:'#ffd166',dark:'#6b2d86',desc:'Naranja calabaza y detalles morados.'},
-    christmas:{name:'Navidad',color:'#25b96a',accent:'#fff0c2',dark:'#b5223c',desc:'Verde festivo con detalles rojos.'},
-    ice:{name:'Hielo',color:'#55e5e8',accent:'#e6ffff',dark:'#2473a6',desc:'Colores fríos y brillantes.'},
-    shadow:{name:'Sombra',color:'#9a7bff',accent:'#e2d9ff',dark:'#30205b',desc:'Violeta misterioso.'}
+    classic:{name:'Clásica',color:'#4aafff',accent:'#c7f4ff',dark:'#172f58',desc:'La skin default.'},
+    halloween:{name:'Halloween',color:'#ff8a24',accent:'#ffd166',dark:'#6b2d86',desc:'Naranjo calabaza y detalles morados.'},
+    christmas:{name:'Navidad',color:'#25b96a',accent:'#fff0c2',dark:'#b5223c',desc:'Verde navidad con detalles rojos.'},
+    ice:{name:'Hielo',color:'#55e5e8',accent:'#e6ffff',dark:'#2473a6',desc:'Colores fríos/hielo y brillantes.'},
+    shadow:{name:'Sombra',color:'#9a7bff',accent:'#e2d9ff',dark:'#30205b',desc:'Un recolor morado simplemente.'}
   };
   const SKIN_PLAYER_KEY='nextdoor_player_skin_v1';
   let playerSkinId=getSkinSaved(SKIN_PLAYER_KEY,'classic');
@@ -344,7 +344,7 @@
         if(all[id]){ $('authError').textContent='Ese correo ya tiene una cuenta en este navegador. Inicia sesión.'; return; }
         all[id]={email,passwordHash:hp,name:email.split('@')[0].slice(0,18)||'Jugador',level:1,coins:0,greenCoins:0,blueCoins:0,redCoins:0,totalCoins:0,lives:3};
         const durable=persistAccounts(all); login(all[id]);
-        say(durable?'Cuenta creada. ¡Que empiece la aventura!':'Entraste a la cuenta por ahora, pero el navegador no permite guardar tus datos.',220);
+        say(durable?'Cuenta creada. ¡Que empiece el juego!':'Entraste a la cuenta por ahora, pero el navegador no permite guardar tus datos.',220);
       }else{
         // Facilita el primer acceso: si el correo aún no existe en este navegador, crea la cuenta.
         if(!all[id]){
