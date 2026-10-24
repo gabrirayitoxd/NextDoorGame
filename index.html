@@ -60,6 +60,15 @@
 .menu-screen ~ .top .logo{border-radius:0;background:#171219;border-color:var(--red);color:var(--red)}
 @media(max-width:520px){.menu-screen,.menu-page{margin:10px auto;padding:25px 20px}.menu-title{font-size:44px}}
 
+
+.skin-preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0}.skin-preview-card{background:#0d1424;border:1px solid #30415f;border-radius:12px;padding:16px;min-width:0}.skin-avatar{height:92px;width:74px;margin:0 auto 12px;border:4px solid #c7f4ff;border-radius:9px;background:#4aafff;display:grid;place-items:center;color:#071323;font-size:35px;box-shadow:inset 0 -12px #0002}.monster-avatar{border-radius:18px 18px 9px 9px;border-color:#fff1e7}.skin-preview-card label{display:block;text-align:center;margin:8px 0}.skin-preview-card select{width:100%;padding:10px;background:#101a2c;color:#f2f5ff;border:1px solid #52658c;border-radius:8px}.skin-desc{font-size:12px;color:var(--muted);min-height:30px;margin:10px 0 0}.skin-notice{color:var(--cyan);font-size:13px}@media(max-width:430px){.skin-preview-grid{grid-template-columns:1fr}.skin-preview-card{padding:12px}}
+
+
+.skin-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:20px 0}
+.skin-choice{background:#0d1424;border:2px solid #30415f;border-radius:12px;padding:14px 10px;color:var(--text);text-align:center;min-height:150px;transition:border-color .15s,transform .15s}
+.skin-choice:hover{transform:translateY(-2px)}.skin-choice.selected{border-color:var(--cyan);box-shadow:0 0 0 2px #5be7ff33}
+.skin-choice-avatar{width:54px;height:64px;margin:0 auto 10px;border:3px solid #c7f4ff;border-radius:8px;box-shadow:inset 0 -10px #0003;display:flex;align-items:center;justify-content:center;color:#071323;font-size:24px}
+.skin-choice-name{font-weight:bold}.skin-choice-desc{font-size:12px;color:var(--muted);margin-top:6px}
 </style>
 </head>
 <body>
@@ -71,9 +80,17 @@
     <p class="menu-subtitle">Cada puerta esconde un nuevo peligro. Busca las llaves, recoge monedas y no dejes que te atrapen.</p>
     <div class="menu-actions">
       <button id="playMenuBtn" class="primary" type="button">JUGAR</button>
+      <button id="skinsMenuBtn" type="button">SKINS</button>
       <button id="settingsMenuBtn" type="button">SETTINGS</button>
       <button id="creditsMenuBtn" type="button">CRÉDITOS</button>
     </div>
+  </section>
+  <section id="skinsScreen" class="panel menu-page hidden">
+    <h2>SKINS</h2>
+    <p class="menu-subtitle">Elige el aspecto de tu personaje. El monstruo conserva su color original y las skins no cambian la hitbox.</p>
+    <div class="skin-gallery" id="skinGallery" aria-label="Elige una skin"></div>
+    <p id="skinNotice" class="skin-notice" role="status">Selecciona una skin para equiparla.</p>
+    <button id="skinsBackBtn" class="primary wide" type="button">VOLVER AL MENÚ</button>
   </section>
   <section id="settingsScreen" class="panel menu-page hidden">
     <h2>SETTINGS</h2>
@@ -110,9 +127,9 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const authScreen = $('authScreen'), gameScreen = $('gameScreen'), canvas = $('game'), ctx = canvas.getContext('2d');
-  const mainMenu=$('mainMenu'), settingsScreen=$('settingsScreen'), creditsScreen=$('creditsScreen');
+  const mainMenu=$('mainMenu'), settingsScreen=$('settingsScreen'), creditsScreen=$('creditsScreen'), skinsScreen=$('skinsScreen');
   let masterVolume=0.7;
-  function showMenuScreen(which){mainMenu.classList.toggle('hidden',which!=='main');settingsScreen.classList.toggle('hidden',which!=='settings');creditsScreen.classList.toggle('hidden',which!=='credits');authScreen.classList.toggle('hidden',which!=='auth');gameScreen.classList.add('hidden');}
+  function showMenuScreen(which){mainMenu.classList.toggle('hidden',which!=='main');settingsScreen.classList.toggle('hidden',which!=='settings');creditsScreen.classList.toggle('hidden',which!=='credits');skinsScreen.classList.toggle('hidden',which!=='skins');authScreen.classList.toggle('hidden',which!=='auth');gameScreen.classList.add('hidden');}
   function applyVolume(){
     document.querySelectorAll('audio').forEach(a=>{const base=Number(a.dataset.nextdoorBaseVolume||a.dataset.nextdoorDefaultVolume||0.4);a.volume=Math.max(0,Math.min(1,base*masterVolume));});
     if(ambientMusicNodes&&ambientMusicNodes.master)ambientMusicNodes.master.gain.value=0.018*masterVolume;
@@ -120,12 +137,41 @@
   }
   $('playMenuBtn').addEventListener('click',()=>{showMenuScreen('auth');});
   $('settingsMenuBtn').addEventListener('click',()=>showMenuScreen('settings'));
+  $('skinsMenuBtn').addEventListener('click',()=>{refreshSkinUI();showMenuScreen('skins');});
+  $('skinsBackBtn').addEventListener('click',()=>showMenuScreen('main'));
   $('creditsMenuBtn').addEventListener('click',()=>showMenuScreen('credits'));
   $('settingsBackBtn').addEventListener('click',()=>showMenuScreen('main'));
   $('creditsBackBtn').addEventListener('click',()=>showMenuScreen('main'));
   $('volumeSlider').addEventListener('input',e=>{masterVolume=Number(e.target.value)/100;applyVolume();});
   document.querySelectorAll('audio').forEach(a=>{a.dataset.nextdoorDefaultVolume=a.id==='deathSound'?'0.8':'0.4';});
 
+  const SKINS={
+    classic:{name:'Clásica',color:'#4aafff',accent:'#c7f4ff',dark:'#172f58',desc:'El aspecto original.'},
+    halloween:{name:'Halloween',color:'#ff8a24',accent:'#ffd166',dark:'#6b2d86',desc:'Naranja calabaza y detalles morados.'},
+    christmas:{name:'Navidad',color:'#25b96a',accent:'#fff0c2',dark:'#b5223c',desc:'Verde festivo con detalles rojos.'},
+    ice:{name:'Hielo',color:'#55e5e8',accent:'#e6ffff',dark:'#2473a6',desc:'Colores fríos y brillantes.'},
+    shadow:{name:'Sombra',color:'#9a7bff',accent:'#e2d9ff',dark:'#30205b',desc:'Violeta misterioso.'}
+  };
+  const SKIN_PLAYER_KEY='nextdoor_player_skin_v1';
+  let playerSkinId=getSkinSaved(SKIN_PLAYER_KEY,'classic');
+  if(!SKINS[playerSkinId])playerSkinId='classic';
+  function getSkinSaved(key,fallback){try{return localStorage.getItem(key)||fallback;}catch{return fallback;}}
+  function saveSkin(key,value){try{localStorage.setItem(key,value);}catch{}}
+  function refreshSkinUI(){
+    const gallery=$('skinGallery');
+    gallery.innerHTML=Object.entries(SKINS).map(([id,skin])=>`<button type="button" class="skin-choice ${id===playerSkinId?'selected':''}" data-skin="${id}" aria-pressed="${id===playerSkinId?'true':'false'}"><span class="skin-choice-avatar" style="background:${skin.color};border-color:${skin.accent};box-shadow:inset 0 -10px ${skin.dark}">●</span><span class="skin-choice-name">${skin.name}${id===playerSkinId?' ✓':''}</span><div class="skin-choice-desc">${skin.desc}</div></button>`).join('');
+    gallery.querySelectorAll('[data-skin]').forEach(btn=>btn.addEventListener('click',()=>{playerSkinId=btn.dataset.skin;saveSkin(SKIN_PLAYER_KEY,playerSkinId);refreshSkinUI();$('skinNotice').textContent='Skin '+SKINS[playerSkinId].name+' equipada.';}));
+  }
+  $('skinGallery').addEventListener('click',()=>{});
+  function drawSkinnedCharacter(x,y,w,h,skinId,isMonster=false){
+    if(isMonster){ctx.fillStyle='#f05c77';ctx.fillRect(x,y,w,h);ctx.fillStyle='#a92b4d';ctx.fillRect(x+4,y+h-9,w-8,7);ctx.fillStyle='#fff1e7';ctx.fillRect(x+w*.18,y+h*.22,Math.max(4,w*.22),Math.max(5,h*.22));ctx.fillRect(x+w*.64,y+h*.22,Math.max(4,w*.22),Math.max(5,h*.22));ctx.fillStyle='#17182b';ctx.fillRect(x+w*.25,y+h*.29,3,4);ctx.fillRect(x+w*.69,y+h*.29,3,4);return;}
+    const skin=SKINS[skinId]||SKINS.classic;ctx.fillStyle=skin.color;ctx.fillRect(x,y,w,h);
+    ctx.fillStyle=skin.accent;ctx.fillRect(x+w*.15,y+h*.15,w*.7,h*.25);
+    if(isMonster){ctx.fillStyle=skin.dark;ctx.fillRect(x+w*.15,y+h*.72,w*.7,h*.2);ctx.fillStyle='#fff1e7';ctx.fillRect(x+w*.18,y+h*.22,Math.max(4,w*.22),Math.max(5,h*.22));ctx.fillRect(x+w*.62,y+h*.22,Math.max(4,w*.22),Math.max(5,h*.22));ctx.fillStyle='#17182b';ctx.fillRect(x+w*.25,y+h*.29,3,4);ctx.fillRect(x+w*.69,y+h*.29,3,4);}else{ctx.fillStyle=skin.dark;ctx.fillRect(x+w*.18,y+h*.73,w*.22,h*.27);ctx.fillRect(x+w*.61,y+h*.73,w*.22,h*.27);ctx.fillStyle='#071323';ctx.fillRect(x+w*.33,y+h*.24,3,3);ctx.fillRect(x+w*.63,y+h*.24,3,3);}
+    if(skinId==='halloween'){ctx.fillStyle='#6b2d86';ctx.fillRect(x+w*.12,y-h*.06,w*.76,Math.max(3,h*.1));ctx.beginPath();ctx.moveTo(x+w*.1,y-h*.06);ctx.lineTo(x+w*.5,y-h*.32);ctx.lineTo(x+w*.9,y-h*.06);ctx.fill();}
+    if(skinId==='christmas'){ctx.fillStyle='#fff0c2';ctx.fillRect(x+w*.12,y-h*.06,w*.76,Math.max(3,h*.1));ctx.fillStyle='#b5223c';ctx.beginPath();ctx.moveTo(x+w*.1,y-h*.06);ctx.lineTo(x+w*.5,y-h*.32);ctx.lineTo(x+w*.9,y-h*.06);ctx.fill();ctx.beginPath();ctx.arc(x+w*.5,y-h*.32,Math.max(2,w*.09),0,Math.PI*2);ctx.fill();}
+    if(skinId==='ice'){ctx.fillStyle='#fff';ctx.fillRect(x+w*.08,y+h*.48,w*.16,3);ctx.fillRect(x+w*.72,y+h*.48,w*.16,3);}
+  }
   const STORE = 'enter_to_the_door_accounts_v1', SESSION = 'enter_to_the_door_current_v1';
   // Algunos navegadores restringen localStorage en archivos abiertos con doble clic.
   // En ese caso, la sesión seguirá funcionando temporalmente en memoria.
@@ -211,8 +257,8 @@
       else{ctx.fillStyle=((x+y)%2)?'#171b2a':'#1b2030';ctx.fillRect(px,py,MAZE_CELL,MAZE_CELL);ctx.strokeStyle='rgba(104,135,165,.12)';ctx.strokeRect(px+1,py+1,MAZE_CELL-2,MAZE_CELL-2);}
     }
     ctx.fillStyle='#4b2f31';ctx.fillRect(mazeExit.x,mazeExit.y,mazeExit.w,mazeExit.h);ctx.fillStyle='#70e6f3';ctx.fillRect(mazeExit.x+6,mazeExit.y+6,mazeExit.w-12,mazeExit.h-12);
-    for(const e of enemies){ctx.fillStyle='#f05c77';ctx.fillRect(e.x,e.y,e.w,e.h);ctx.fillStyle='#fff1e7';ctx.fillRect(e.x+5,e.y+7,6,8);ctx.fillRect(e.x+19,e.y+7,6,8);ctx.fillStyle='#17182b';ctx.fillRect(e.x+7,e.y+9,3,4);ctx.fillRect(e.x+21,e.y+9,3,4);}
-    if(invulnerable===0||Math.floor(invulnerable/6)%2===0){ctx.fillStyle='#4aafff';ctx.fillRect(player.x,player.y,player.w,player.h);ctx.fillStyle='#c7f4ff';ctx.fillRect(player.x+4,player.y+5,19,9);ctx.fillStyle='#071323';ctx.fillRect(player.x+9,player.y+8,3,3);ctx.fillRect(player.x+17,player.y+8,3,3);}
+    for(const e of enemies){drawSkinnedCharacter(e.x,e.y,e.w,e.h,'halloween',true);}
+    if(invulnerable===0||Math.floor(invulnerable/6)%2===0){drawSkinnedCharacter(player.x,player.y,player.w,player.h,playerSkinId,false);}
     ctx.restore();
     ctx.fillStyle='#d3dcef';ctx.textAlign='center';ctx.font='bold 18px "Comic Sans MS","Comic Neue",sans-serif';ctx.fillText('LABERINTO · ENCUENTRA LA SALIDA',w/2,32);ctx.textAlign='left';
     const g=ctx.createRadialGradient(w/2,h/2,100,w/2,h/2,Math.max(w,h)*.75);g.addColorStop(0,'rgba(3,5,12,0)');g.addColorStop(1,'rgba(3,5,12,.48)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
@@ -562,10 +608,10 @@
       // Llave
       if(!hasKey){ctx.fillStyle='#70e6f3';ctx.fillRect(keyObj.x,keyObj.y+3,17,5);ctx.fillRect(keyObj.x+11,keyObj.y+3,6,13);ctx.fillRect(keyObj.x+15,keyObj.y+3,7,5);ctx.fillStyle='#183447';ctx.fillRect(keyObj.x+2,keyObj.y+1,6,9);ctx.fillStyle='#70e6f3';ctx.fillRect(keyObj.x+1,keyObj.y,8,8);ctx.fillStyle=r.color;ctx.fillRect(keyObj.x+3,keyObj.y+2,4,4);}
       // Monstruo perseguidor: puede cruzar los lagos.
-      for(const enemy of enemies){ctx.fillStyle='#f05c77';ctx.fillRect(enemy.x,enemy.y,enemy.w,enemy.h);ctx.fillStyle='#a92b4d';ctx.fillRect(enemy.x+4,enemy.y+enemy.h-9,enemy.w-8,7);ctx.fillStyle='#fff1e7';ctx.fillRect(enemy.x+enemy.w*.18,enemy.y+enemy.h*.22,7,8);ctx.fillRect(enemy.x+enemy.w*.64,enemy.y+enemy.h*.22,7,8);ctx.fillStyle='#17182b';ctx.fillRect(enemy.x+enemy.w*.25,enemy.y+enemy.h*.31,3,4);ctx.fillRect(enemy.x+enemy.w*.7,enemy.y+enemy.h*.31,3,4);}
+      for(const enemy of enemies){drawSkinnedCharacter(enemy.x,enemy.y,enemy.w,enemy.h,'halloween',true);}
     }
     // Jugador
-    if(!isElevatorRoom&&(invulnerable===0||Math.floor(invulnerable/6)%2===0)){ctx.fillStyle='#4aafff';ctx.fillRect(player.x,player.y,player.w,player.h);ctx.fillStyle='#c7f4ff';ctx.fillRect(player.x+4,player.y+5,19,9);ctx.fillStyle='#172f58';ctx.fillRect(player.x+5,player.y+25,6,9);ctx.fillRect(player.x+17,player.y+25,6,9);ctx.fillStyle='#071323';ctx.fillRect(player.x+9,player.y+8,3,3);ctx.fillRect(player.x+17,player.y+8,3,3);}
+    if(!isElevatorRoom&&(invulnerable===0||Math.floor(invulnerable/6)%2===0)){drawSkinnedCharacter(player.x,player.y,player.w,player.h,playerSkinId,false);}
     // Rótulos
     ctx.font='bold 14px "Comic Sans MS", "Comic Neue", sans-serif';ctx.textAlign='center';ctx.fillStyle='#d3dcef';ctx.fillText(isElevatorRoom?'ASCENSOR · VIAJE ENTRE BLOQUES':(isShopRoom?'SALA SEGURA · TIENDA':r.name.toUpperCase()),480,70);ctx.font='12px Georgia, serif';ctx.fillStyle='#ffd76a';if(!isElevatorRoom)ctx.fillText('SALIDA',door.x+door.w/2,door.y-10);if(isElevatorRoom){ctx.font='bold 22px \"Comic Sans MS\", \"Comic Neue\", cursive';ctx.fillStyle='#70e6f3';ctx.fillText('SUBIENDO...',480,430);ctx.font='16px \"Comic Sans MS\", \"Comic Neue\", cursive';ctx.fillStyle='#ffd76a';ctx.fillText(Math.max(0,Math.ceil(24-(performance.now()-elevatorStartedAt)/1000))+' s',480,462);}ctx.textAlign='left';if(boostFrames>0){ctx.font='12px "Comic Sans MS", "Comic Neue", sans-serif';ctx.fillStyle='#70e6f3';ctx.fillText('TURBO '+Math.ceil(boostFrames/60)+'s',24,85);}if(shieldCharges>0){ctx.fillStyle='#8bffc1';ctx.fillText('ESCUDO x'+shieldCharges,24,103);}if(slowFrames>0){ctx.fillStyle='#c6a7ff';ctx.fillText('BOT LENTO '+Math.ceil(slowFrames/60)+'s',24,121);}
     const g=ctx.createRadialGradient(480,300,190,480,300,580);g.addColorStop(0,'rgba(3,5,12,0)');g.addColorStop(1,'rgba(3,5,12,.35)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
