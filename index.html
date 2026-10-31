@@ -550,6 +550,21 @@
     if(toastTime>0)toastTime--;else $('toast').classList.add('hidden');
   }
   function showModal(title,text,button,action){paused=true;$('modalTitle').textContent=title;$('modalText').textContent=text;$('modalButton').textContent=button;$('modal').classList.remove('hidden');$('modalButton').onclick=()=>{$('modal').classList.add('hidden');paused=false;action();};}
+
+  // Decoraciones únicas: máximo cinco por sala y elegidas según el nombre.
+  function drawRoomDecor(room){
+    const name=(room.name||'').toLowerCase(), seed=((level-1)%15)+1;
+    const spots=[[150,145],[310,155],[690,145],[175,430],[680,440]];ctx.save();
+    function plant(x,y){ctx.fillStyle='#4d7057';ctx.fillRect(x+9,y+18,5,17);ctx.fillStyle='#73966e';ctx.beginPath();ctx.arc(x+8,y+14,9,0,Math.PI*2);ctx.arc(x+17,y+11,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#755843';ctx.fillRect(x+3,y+32,20,7)}
+    function shelf(x,y){ctx.fillStyle='#5d4639';ctx.fillRect(x,y,38,48);ctx.fillStyle='#9a7355';ctx.fillRect(x,y+13,38,4);ctx.fillRect(x,y+29,38,4);for(let i=0;i<3;i++){ctx.fillStyle=['#c97961','#6e9bc1','#d5b56a'][i];ctx.fillRect(x+5+i*10,y+3,7,10)}}
+    function crate(x,y){ctx.fillStyle='#80583f';ctx.fillRect(x,y,28,25);ctx.strokeStyle='#c18a61';ctx.lineWidth=3;ctx.strokeRect(x+2,y+2,24,21);ctx.beginPath();ctx.moveTo(x+3,y+3);ctx.lineTo(x+25,y+22);ctx.moveTo(x+25,y+3);ctx.lineTo(x+3,y+22);ctx.stroke()}
+    function lamp(x,y){ctx.fillStyle='#44465a';ctx.fillRect(x+10,y,3,29);ctx.shadowColor='#ffe6a3';ctx.shadowBlur=12;ctx.fillStyle='#ffe09a';ctx.fillRect(x+4,y+5,15,10);ctx.shadowBlur=0}
+    function bones(x,y){ctx.strokeStyle='#d8d1bc';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y+16);ctx.lineTo(x+24,y);ctx.moveTo(x+4,y);ctx.lineTo(x+28,y+18);ctx.stroke()}
+    const f=name.includes('bibli')?shelf:name.includes('jard')||name.includes('bosque')?plant:name.includes('abandon')||name.includes('caja')?crate:name.includes('oscura')||name.includes('sombra')?lamp:name.includes('hues')||name.includes('calavera')?bones:name.includes('cristal')||name.includes('cueva')?bones:null;
+    if(f){for(let i=0;i<5;i++)f(...spots[(i+seed)%spots.length])}else{const mix=[plant,shelf,crate,lamp,bones];for(let i=0;i<5;i++)mix[(i+seed)%mix.length](...spots[i])}ctx.restore()
+  }
+  function drawExitDoor(){const pulse=.55+.45*Math.sin(particleTick*.045),open=hasKey?6+pulse*3:0;ctx.save();if(hasKey){ctx.shadowColor='#70e6f3';ctx.shadowBlur=12+pulse*12}ctx.fillStyle='#4b2f31';ctx.fillRect(door.x-open/2,door.y,door.w+open,door.h);ctx.fillStyle=hasKey?'#ffd76a':'#6c5860';ctx.fillRect(door.x+5-open/2,door.y+7,door.w-10+open,door.h-12);ctx.fillStyle='#15182b';ctx.fillRect(door.x+10-open/2,door.y+12,door.w-20+open,door.h-18);ctx.shadowBlur=0;ctx.fillStyle=hasKey?'#70e6f3':'#a7a9b7';ctx.fillRect(door.x+24,door.y+34,4,4);if(hasKey){for(let i=0;i<3;i++){ctx.fillStyle=`rgba(112,230,243,${.25+pulse*.2})`;ctx.fillRect(door.x+4+i*10,door.y-8-i*4,2,2)}}ctx.restore()}
+
   function drawWater(lakes){
     for(const lake of lakes){
       const cx=lake.x+lake.w/2,cy=lake.y+lake.h/2;
@@ -573,7 +588,7 @@
     for(const p of ambientParticles){
       p.y-=p.speed; if(p.y<p.homeY-p.rangeY/2)p.y=p.homeY+p.rangeY/2;
       p.x=p.homeX+Math.sin((particleTick+p.phase)*.025)*p.drift;
-      if(p.kind==='whisper'){ctx.fillStyle='rgba(196,181,255,'+p.alpha+')';ctx.shadowColor='#b4a0ff';ctx.shadowBlur=8;ctx.fillRect(p.x,p.y,p.size,p.size*1.9);ctx.shadowBlur=0;}
+      if(p.kind==='whisper'){/* Partículas moradas eliminadas para evitar manchas visuales. */}
       else {ctx.fillStyle='rgba(133,239,255,'+p.alpha+')';ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();}
     }
   }
@@ -599,14 +614,14 @@
     ctx.fillStyle=isShopRoom?'#343a3d':r.color;ctx.fillRect(96,88,768,432);ctx.strokeStyle=isShopRoom?'#81725d':'#465477';ctx.lineWidth=16;ctx.strokeRect(104,96,752,416);ctx.lineWidth=1;
     const ts=isShopRoom?48:tileSize;for(let x=112;x<848;x+=ts)for(let y=104;y<504;y+=ts){ctx.strokeStyle=isShopRoom?'rgba(217,193,155,.12)':'rgba(125,151,194,.13)';ctx.strokeRect(x,y,ts-2,ts-2);if(((Math.floor(x/ts)+Math.floor(y/ts))%5)===0){ctx.fillStyle='rgba(8,12,25,.15)';ctx.fillRect(x+8,y+8,5,5);}}
     const decor=isShopRoom?[[147,147],[800,465],[315,470]]:roomDecor.map(d=>[d.x,d.y]);for(const [x,y] of decor){ctx.fillStyle=isShopRoom?'#8f795f':'#5e6a87';ctx.fillRect(x,y,18,3);ctx.fillRect(x+5,y-5,3,13);}
-    if(isElevatorRoom){drawElevatorScene();}else if(isShopRoom)drawShopDecor();else {drawWater(r.lakes);drawAmbientParticles();}
+    if(isElevatorRoom){drawElevatorScene();}else if(isShopRoom)drawShopDecor();else {drawRoomDecor(r);drawWater(r.lakes);drawAmbientParticles();}
     // Puerta de salida; el texto SALIDA conserva una tipografía distinta a Comic Sans/Neue.
-    if(!isElevatorRoom){ctx.fillStyle=isShopRoom?'#473a33':'#4b2f31';ctx.fillRect(door.x,door.y,door.w,door.h);ctx.fillStyle=(isShopRoom||hasKey)?'#ffd76a':'#6c5860';ctx.fillRect(door.x+5,door.y+7,door.w-10,door.h-12);ctx.fillStyle='#15182b';ctx.fillRect(door.x+10,door.y+12,door.w-20,door.h-18);ctx.fillStyle=(isShopRoom||hasKey)?'#70e6f3':'#a7a9b7';ctx.fillRect(door.x+24,door.y+34,4,4);}
+    if(!isElevatorRoom){if(isShopRoom){ctx.fillStyle='#473a33';ctx.fillRect(door.x,door.y,door.w,door.h);ctx.fillStyle='#ffd76a';ctx.fillRect(door.x+5,door.y+7,door.w-10,door.h-12);}else drawExitDoor();}
     if(!isShopRoom&&!isElevatorRoom){
       // Monedas
-      for(const c of roomCoins){if(c.taken)continue;const colors={gold:['#7d5317','#ffd34f','#fff0a1','#b98120'],green:['#176b3c','#51e58b','#d5ffe2','#2b9b57'],blue:['#174f88','#58aaff','#d9f0ff','#2869bd'],red:['#8e2037','#ff596b','#ffd8dc','#c72d49']};const col=colors[c.type]||colors.gold;ctx.fillStyle=col[0];ctx.fillRect(c.x-8,c.y-7,18,17);ctx.fillStyle=col[1];ctx.fillRect(c.x-6,c.y-8,15,16);ctx.fillStyle=col[2];ctx.fillRect(c.x-3,c.y-5,5,10);ctx.fillStyle=col[3];ctx.fillRect(c.x+4,c.y-3,2,8);}
+      for(const c of roomCoins){if(c.taken)continue;const colors={gold:['#7d5317','#ffd34f','#fff0a1','#b98120'],green:['#176b3c','#51e58b','#d5ffe2','#2b9b57'],blue:['#174f88','#58aaff','#d9f0ff','#2869bd'],red:['#8e2037','#ff596b','#ffd8dc','#c72d49']};const col=colors[c.type]||colors.gold;ctx.save();ctx.beginPath();ctx.ellipse(c.x,c.y,9,11,0,0,Math.PI*2);ctx.fillStyle=col[0];ctx.fill();ctx.beginPath();ctx.ellipse(c.x,c.y-1,7,9,0,0,Math.PI*2);ctx.fillStyle=col[1];ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle=col[3];ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(c.x,c.y,7,9,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle=col[2];ctx.beginPath();ctx.ellipse(c.x-2.5,c.y-3,2.2,3.5,-.35,0,Math.PI*2);ctx.fill();ctx.fillStyle=col[3];ctx.fillRect(c.x-1,c.y-5,2,10);ctx.restore();}
       // Llave
-      if(!hasKey){ctx.fillStyle='#70e6f3';ctx.fillRect(keyObj.x,keyObj.y+3,17,5);ctx.fillRect(keyObj.x+11,keyObj.y+3,6,13);ctx.fillRect(keyObj.x+15,keyObj.y+3,7,5);ctx.fillStyle='#183447';ctx.fillRect(keyObj.x+2,keyObj.y+1,6,9);ctx.fillStyle='#70e6f3';ctx.fillRect(keyObj.x+1,keyObj.y,8,8);ctx.fillStyle=r.color;ctx.fillRect(keyObj.x+3,keyObj.y+2,4,4);}
+      if(!hasKey){const ky=keyObj.y+Math.sin(particleTick*.045)*2.2;ctx.save();ctx.shadowColor='#70e6f3';ctx.shadowBlur=10;ctx.fillStyle='#70e6f3';ctx.fillRect(keyObj.x,ky+3,17,5);ctx.fillRect(keyObj.x+11,ky+3,6,13);ctx.fillRect(keyObj.x+15,ky+3,7,5);ctx.shadowBlur=0;ctx.fillStyle='#183447';ctx.fillRect(keyObj.x+2,ky+1,6,9);ctx.fillStyle='#70e6f3';ctx.fillRect(keyObj.x+1,ky,8,8);ctx.fillStyle=r.color;ctx.fillRect(keyObj.x+3,ky+2,4,4);ctx.restore();}
       // Monstruo perseguidor: puede cruzar los lagos.
       for(const enemy of enemies){drawSkinnedCharacter(enemy.x,enemy.y,enemy.w,enemy.h,'halloween',true);}
     }
